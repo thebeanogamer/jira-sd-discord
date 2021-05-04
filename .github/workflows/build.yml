@@ -1,0 +1,26 @@
+name: Build Docker Container
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Get branch name
+      shell: bash
+      run: echo "##[set-output name=name;]`echo $([ ${GITHUB_REF#refs/heads/} = "main" ] && echo 'latest' || echo ${GITHUB_REF#refs/heads/}) | sed 's/\//-/g'`"
+      id: branch
+
+    - name: Build Docker Container
+      run: docker build -t ghcr.io/thebeanogamer/jirasddiscord:${{ steps.branch.outputs.name }} .
+
+    - name: Login to Github Container Registry
+      if: github.ref == 'refs/heads/main'
+      run: echo ${{ secrets.ghtoken }} | docker login ghcr.io -u ${{ secrets.ghuser }} --password-stdin
+
+    - name: Push to Github Container Registry
+      if: github.ref == 'refs/heads/main'
+      run: docker push ghcr.io/thebeanogamer/jirasddiscord:${{ steps.branch.outputs.name }}
